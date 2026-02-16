@@ -20,10 +20,13 @@ using namespace std;
 /// @param count  The number of characters to extract
 /// @return The string
 string extract_string(vector<uint8_t>::iterator &it, size_t count) {
-  cout << "parsing.cc::extract_string() is not implemented\n";
+  // cout << "parsing.cc::extract_string() is not implemented\n";
   // NB: These assertions are only here to prevent compiler warnings
-  assert(count != 0);
-  return "";
+  // assert(count != 0);
+  std::string result(it, it + count); 
+
+  std::advance(it,count);
+  return result;
 }
 
 
@@ -31,8 +34,14 @@ string extract_string(vector<uint8_t>::iterator &it, size_t count) {
 /// @param it An iterator to the extraction point
 /// @return The uint32_t extracted
 uint32_t extract_size(vector<uint8_t>::iterator &it) {
-  cout << "parsing.cc::extract_size() is not implemented\n";
-  return 0;
+  // cout << "parsing.cc::extract_size() is not implemented\n";
+  // return 0;
+  uint32_t size;
+
+  std::memcopy(&size, &(*it), sizeof(uint32_t));
+
+  std::advance(it, size(uint_t));
+  return size; 
 }
 
 /// When a new client connection is accepted, this code will run to figure out
@@ -44,9 +53,16 @@ uint32_t extract_size(vector<uint8_t>::iterator &it) {
 ///
 /// @return true if the server should halt immediately, false otherwise
 bool parse_request(int sd, Storage *storage) {
-  cout << "parsing.cc::parse_request() is not implemented\n";
+  // cout << "parsing.cc::parse_request() is not implemented\n";
   // NB: These assertions are only here to prevent compiler warnings
-  assert(sd);
-  assert(storage);
-  return false;
+  // assert(sd);
+  // assert(storage);
+  
+  // Iterate through possible commands, pick the right one, run it
+  vector<string> s = {REQ_REG, REQ_BYE, REQ_SAV, REQ_SET, REQ_GET, REQ_ALL};
+  decltype(handle_reg) *cmds[] = {handle_reg, handle_bye, handle_sav,
+                                  handle_set, handle_get, handle_all};
+  for (size_t i = 0; i < s.size(); ++i)
+    if (cmd == s[i])
+      return cmds[i](sd, storage, aes_ctx, ablock);
 }

@@ -6,6 +6,7 @@
 #include "responses.h"
 
 using namespace std;
+
 /// Add the size of a value to a vector as a 4-byte value
 ///
 /// @param res  The vector to add to
@@ -13,10 +14,15 @@ using namespace std;
 ///
 /// @tparam T   The type of t
 template <class T> void add_size(vector<uint8_t> &res, T t) {
-  cout << "responses.cc::add_size() is not implemented\n";
+  // cout << "responses.cc::add_size() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(res.size() > 0);
-  assert(t.size() > 0);
+  // assert(res.size() > 0);
+  // assert(t.size() > 0);
+
+  res.push_back(static_cast<uint8_t>(size & 0xFF));
+  res.push_back(static_cast<uint8_t>((size >> 8) & 0xFF));
+  res.push_back(static_cast<uint8_t>((size >> 16) & 0xFF));
+  res.push_back(static_cast<uint8_t>((size >> 24) & 0xFF));
 }
 
 /// Add the contents of an iterable to a vector
@@ -26,10 +32,11 @@ template <class T> void add_size(vector<uint8_t> &res, T t) {
 ///
 /// @tparam T   The type of t
 template <class T> void add_it(vector<uint8_t> &res, T t) {
-  cout << "responses.cc::add_it() is not implemented\n";
+  // cout << "responses.cc::add_it() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(res.size() > 0);
-  assert(t.size() > 0);
+  // assert(res.size() > 0);
+  // assert(t.size() > 0);
+  res.insert(res.end(), std::begin(t), std::end(t));
 }
 
 /// Concatenate a string and a vector of content, in a format that can be sent
@@ -65,19 +72,27 @@ bool send_err_msg_format(int sd) {
 /// @return The extracted string
 string extract_string(vector<uint8_t>::const_iterator &it,
                              size_t count) {
-  cout << "responses.cc::extract_string() is not implemented\n";
+  // cout << "responses.cc::extract_string() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(count != 0);
-  return "";
+  // assert(count != 0);
+  std::string result(it, it + count); 
+
+  std::advance(it,count);
+  return result;
 }
 
 /// Extract a size (uint32_t) from a vector
 /// @param it An iterator to the extraction point
 /// @return The extracted uint32_t
 uint32_t extract_size(vector<uint8_t>::const_iterator &it) {
-  cout << "responses.cc::extract_size() is not implemented\n";
+  // cout << "responses.cc::extract_size() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  return 0;
+  uint32_t size;
+
+  std::memcopy(&size, &(*it), sizeof(uint32_t));
+
+  std::advance(it, size(uint_t));
+  return size; 
 }
 
 /// Extract a vector from a vector
@@ -86,10 +101,19 @@ uint32_t extract_size(vector<uint8_t>::const_iterator &it) {
 /// @return The extracted vector
 vector<uint8_t> extract_vec(vector<uint8_t>::const_iterator &it,
                                    size_t count) {
-  cout << "responses.cc::extract_vector() is not implemented\n";
+  // cout << "responses.cc::extract_vector() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(count != 0);
-  return {};
+  // assert(count != 0);
+  
+  // Define the range as from [it,end)  
+  auto end = next(it, count);
+
+  // Construct new vector from range 
+  vector<uint8_t> extracted(it, end);
+
+  // Update iterator to new position in vector 
+  it = end;
+  return extracted; 
 }
 
 /// Respond to an ALL command by generating a list of all the usernames in the

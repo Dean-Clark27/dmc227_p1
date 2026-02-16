@@ -28,7 +28,7 @@ public:
 
   /// Clear the map
   virtual void clear() { 
-    std::cout << "sequentialmap.h::clear() is not implemented\n"; 
+    entries.clear();
   }
 
   /// Insert the provided key/value pair only if there is no mapping for the key
@@ -40,8 +40,19 @@ public:
   /// @return true if the key/value was inserted, false if the key already
   ///         existed in the table
   virtual bool insert(K key, V val) {
-    std::cout << "sequentialmap.h::insert() is not implemented\n";
-    return false;
+    // std::cout << "sequentialmap.h::insert() is not implemented\n";
+    // return false;
+    
+    // Check if they key already exists
+    for (const auto &entry: entries){
+      if(entry.first == key){
+        return false; // Key exists, don't insert it
+      }
+    }
+
+    // Key doesn't exist, insert it
+    entries.push_back({key, val});
+    return true;
   }
 
   /// Insert the provided key/value pair if there is no mapping for the key yet.
@@ -54,8 +65,21 @@ public:
   /// @return true if the key/value was inserted, false if the key already
   ///         existed in the table and was thus updated instead
   virtual bool upsert(K key, V val) {
-    std::cout << "sequentialmap.h::upsert() is not implemented\n";
-    return false;
+    // std::cout << "sequentialmap.h::upsert() is not implemented\n";
+    // return false;
+  
+    // Search for existing key in map
+    for (auto &entry: entries){
+      if(entry.first == key){
+        // Key exists, update
+        entry.second = val;
+        return false; // False return indicates update, not insert
+      }
+    }
+
+    // Key doesn't exist, therefore we can insert
+    entries.push_back({key, val});
+    return true: // True return indicates insert
   }
 
   /// Apply a function to the value associated with a given key.  The function
@@ -67,11 +91,23 @@ public:
   /// @return true if the key existed and the function was applied, false
   ///         otherwise
   virtual bool do_with(K key, std::function<void(V &)> f) {
-    std::cout << "sequentialmap.h::do_with() is not implemented\n";
+    // std::cout << "sequentialmap.h::do_with() is not implemented\n";
+    // return false;
+  
+    // Linear search for key
+    for (auto &entry: entries){
+      if (entry.first == key){
+        // Key found, apply function to value
+        f(entry.second);
+        return true;
+      }
+    }
+
+    // Key not found
     return false;
   }
 
-  /// Apply a function to the value associated with a given key.  The function
+  /// Apply a function to the value associated with a given key. The function
   /// is not allowed to modify the value.
   ///
   /// @param key The key whose value will be modified
@@ -80,7 +116,19 @@ public:
   /// @return true if the key existed and the function was applied, false
   ///         otherwise
   virtual bool do_with_readonly(K key, std::function<void(const V &)> f) {
-    std::cout << "sequentialmap.h::do_with_readonly() is not implemented\n";
+    // std::cout << "sequentialmap.h::do_with_readonly() is not implemented\n";
+    // return false;
+  
+    // Search for key
+    for (auto &entry: entries){
+      if (entry.first == key){
+        // Key found, apply function but read-only
+        f(entry.second);
+        return true;
+      }
+    }
+
+    // Key not found
     return false;
   }
 
@@ -90,8 +138,23 @@ public:
   ///
   /// @return true if the key was found and the value unmapped, false otherwise
   virtual bool remove(K key) {
-    std::cout << "sequentialmap.h::remove() is not implemented\n";
-    return false;
+    // std::cout << "sequentialmap.h::remove() is not implemented\n";
+    // return false;
+  
+    // Find first element that matches the key
+    // Using std::remove_if with erase idiom  
+    auto it = std::find_if(entries.begin(), entries.end(),
+                          [&key](const std::pair<K, V> &entry) {
+                            return entry.first == key;
+                          });
+
+    if (it != entries.end()){
+      // Key found, remove it
+      entries.erase(it);
+    }
+
+    // Key not found
+    return false; 
   }
 
   /// Apply a function to every key/value pair in the map.  Note that the
@@ -101,7 +164,12 @@ public:
   /// @param then A function to run when this is done, but before unlocking...
   ///             useful for 2pl
   virtual void do_all_readonly(std::function<void(const K, const V &)> f) {
-    std::cout << "sequentialmap.h::do_all_readonly() is not implemented\n";
+    // std::cout << "sequentialmap.h::do_all_readonly() is not implemented\n";
     //(void)f;
+  
+    // Apply function to each entry
+    for (const auto &entry : entries) {
+      f(entry.first, entry.second);
+    }
   }
 };

@@ -1,0 +1,11 @@
+[user]
+	name = Dean Clark
+	email = dmc227@lehigh.edu
+[alias]
+	pr = pull --rebase
+[pull]
+	rebase = true
+[rebase]
+	autoStash = true
+[credential]
+	helper = "!f() { /root/.vscode-server/bin/b6a47e94e326b5c209d118cf0f994d6065585705/node /tmp/vscode-remote-containers-2827d7b2-2a5c-4125-b780-29569bd74d5c.js git-credential-helper $*; }; f"

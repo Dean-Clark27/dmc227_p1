@@ -1,0 +1,14 @@
+# Object files and libraries
+*.o
+*.ko
+*.lo
+*.la
+*.a
+*.so
+*.d
+
+# Object folders
+obj64/
+
+# Executable files
+*.exe
