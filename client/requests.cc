@@ -331,7 +331,7 @@ void req_set(int sd, const string &user, const string &pass, const string &setfi
   }
   
   // Check file size (max 1MB)
-  if (file_contents.size() > 1048576) {
+  if (file_contents.size() > LEN_PROFILE_FILE) {
     cerr << "Error: File too large (max 1MB)" << endl;
     return;
   }
