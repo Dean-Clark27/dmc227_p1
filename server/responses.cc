@@ -19,6 +19,7 @@ template <class T> void add_size(vector<uint8_t> &res, T t) {
   // assert(res.size() > 0);
   // assert(t.size() > 0);
 
+  uint32_t size = t.size();
   res.push_back(static_cast<uint8_t>(size & 0xFF));
   res.push_back(static_cast<uint8_t>((size >> 8) & 0xFF));
   res.push_back(static_cast<uint8_t>((size >> 16) & 0xFF));
@@ -48,11 +49,22 @@ template <class T> void add_it(vector<uint8_t> &res, T t) {
 ///
 /// @return a vector with the correct concatenation of msg and content
 vector<uint8_t> build_res(const string &msg, const vector<uint8_t> &content) {
-  cout << "responses.cc::build_res() is not implemented\n";
+  // cout << "responses.cc::build_res() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(msg.length() > 0);
-  assert(content.size() > 0);
-  return {};
+  // assert(msg.length() > 0);
+  // assert(content.size() > 0);
+  
+  vector<uint8_t> response;
+  // Add the message (either "OK__" or "ERR__"")
+  add_it(response, msg);
+
+  // If there's content, add size and then content
+  if (!content.empty()) {
+    add_size(response, content);
+    add_it(response, content);
+  }
+  
+  return response;
 }
 
 /// Send a message format error
@@ -129,13 +141,29 @@ vector<uint8_t> extract_vec(vector<uint8_t>::const_iterator &it,
 bool handle_all(int sd, Storage *storage,
                 const std::string &u, const std::string &p,
                 const vector<uint8_t> &req) {
-  cout << "responses.cc::handle_all() is not implemented\n";
+  // cout << "responses.cc::handle_all() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(sd);
-  assert(storage);
-  assert(u.length() > 0);
-  assert(p.length() > 0);
-  assert(req.size() > 0);
+  // assert(sd);
+  // assert(storage);
+  // assert(u.length() > 0);
+  // assert(p.length() > 0);
+  // assert(req.size() > 0);
+  
+  // ALL_ command should have no additional data (req should be empty)
+  // Protocol: "ALL_".len(user).len(pass).@0.user.pass
+  // The req parameter here represents the additional message data, which is empty
+  // Call storage to get all users
+  auto result = storage->get_all_users(u, p);
+  
+  if (result.succeeded) {
+    // Build response: OK__.len(data).data
+    vector<uint8_t> response = build_res(RES_OK, result.data);
+    send_reliably(sd, response);
+  } else {
+    // Send error message
+    send_reliably(sd, result.msg);
+  }
+  
   return false;
 }
 
@@ -151,13 +179,45 @@ bool handle_all(int sd, Storage *storage,
 bool handle_set(int sd, Storage *storage,
                 const std::string &u, const std::string &p,
                 const vector<uint8_t> &req) {
-  cout << "responses.cc::handle_set() is not implemented\n";
+  // cout << "responses.cc::handle_set() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(sd);
-  assert(storage);
-  assert(u.length() > 0);
-  assert(p.length() > 0);
-  assert(req.size() > 0);
+  // assert(sd);
+  // assert(storage);
+  // assert(u.length() > 0);
+  // assert(p.length() > 0);
+  // assert(req.size() > 0);
+  // return false;
+
+  // SETP protocol: "SETP".len(user).len(pass).len(msg).user.pass.msg
+  // Where msg = len(content).content
+  // The req parameter contains: len(content).content
+  
+  // Parse the request: first 4 bytes are the content length
+  auto it = req.begin();
+  
+  if (req.size() < 4) {
+    return send_err_msg_format(sd);
+  }
+  
+  uint32_t content_len = extract_size(it);
+  
+  // Check if we have enough data
+  if (req.size() != 4 + content_len) {
+    return send_err_msg_format(sd);
+  }
+  
+  // Extract the content
+  vector<uint8_t> content = extract_vec(it, content_len);
+  
+  // Call storage to set user data
+  auto result = storage->set_user_data(u, p, content);
+  
+  if (result.succeeded) {
+    send_reliably(sd, RES_OK);
+  } else {
+    send_reliably(sd, result.msg);
+  }
+  
   return false;
 }
 
@@ -173,13 +233,47 @@ bool handle_set(int sd, Storage *storage,
 bool handle_get(int sd, Storage *storage,
                 const std::string &u, const std::string &p,
                 const vector<uint8_t> &req) {
-  cout << "responses.cc::handle_get() is not implemented\n";
+  // cout << "responses.cc::handle_get() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(sd);
-  assert(storage);
-  assert(u.length() > 0);
-  assert(p.length() > 0);
-  assert(req.size() > 0);
+  // assert(sd);
+  // assert(storage);
+  // assert(u.length() > 0);
+  // assert(p.length() > 0);
+  // assert(req.size() > 0);
+
+  // GETP protocol: "GETP".len(user).len(pass).len(msg).user.pass.msg
+  // Where msg = len(who).who
+  // The req parameter contains: len(who).who
+  
+  // Parse the request: first 4 bytes are the length of 'who'
+  auto it = req.begin();
+  
+  if (req.size() < 4) {
+    return send_err_msg_format(sd);
+  }
+  
+  uint32_t who_len = extract_size(it);
+  
+  // Check if we have enough data
+  if (req.size() != 4 + who_len) {
+    return send_err_msg_format(sd);
+  }
+  
+  // Extract the username we're getting data for
+  string who = extract_string(it, who_len);
+  
+  // Call storage to get user data
+  auto result = storage->get_user_data(u, p, who);
+  
+  if (result.succeeded) {
+    // Build response: OK__.len(data).data
+    vector<uint8_t> response = build_res(RES_OK, result.data);
+    send_reliably(sd, response);
+  } else {
+    // Send error message
+    send_reliably(sd, result.msg);
+  }
+  
   return false;
 }
 
@@ -195,13 +289,27 @@ bool handle_get(int sd, Storage *storage,
 bool handle_reg(int sd, Storage *storage,
                 const std::string &u, const std::string &p,
                 const vector<uint8_t> &req) {
-  cout << "responses.cc::handle_reg() is not implemented\n";
+  // cout << "responses.cc::handle_reg() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(sd);
-  assert(storage);
-  assert(u.length() > 0);
-  assert(p.length() > 0);
-  assert(req.size() > 0);
+  // assert(sd);
+  // assert(storage);
+  // assert(u.length() > 0);
+  // assert(p.length() > 0);
+  // assert(req.size() > 0);
+  // REG_ protocol: "REG_".len(user).len(pass).@0.user.pass
+  // The req parameter should be empty (the third length field is 0)
+  
+  // For REG, there should be no additional data
+  // The username and password are already extracted (u and p parameters)
+  // Call storage to add user
+  auto result = storage->add_user(u, p);
+  
+  if (result.succeeded) {
+    send_reliably(sd, RES_OK);
+  } else {
+    send_reliably(sd, result.msg);
+  }
+  
   return false;
 }
 
@@ -218,14 +326,28 @@ bool handle_reg(int sd, Storage *storage,
 bool handle_bye(int sd, Storage *storage,
                 const std::string &u, const std::string &p,
                 const vector<uint8_t> &req) {
-  cout << "responses.cc::handle_bye() is not implemented\n";
+  // cout << "responses.cc::handle_bye() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(sd);
-  assert(storage);
-  assert(u.length() > 0);
-  assert(p.length() > 0);
-  assert(req.size() > 0);
-  return false;
+  // assert(sd);
+  // assert(storage);
+  // assert(u.length() > 0);
+  // assert(p.length() > 0);
+  // assert(req.size() > 0);
+  
+  // EXIT protocol: "EXIT".len(user).len(pass).@0.user.pass
+  // The req parameter should be empty
+  // Authenticate the user
+  auto result = storage->auth(u, p);
+  
+  if (result.succeeded) {
+    // Send OK and then return true to stop the server
+    send_reliably(sd, RES_OK);
+    return true;  // Signal server to stop
+  } else {
+    // Send error and don't stop the server
+    send_reliably(sd, result.msg);
+    return false;
+  }
 }
 
 /// Respond to a SAV command by persisting the file, but only if the user
@@ -241,12 +363,32 @@ bool handle_bye(int sd, Storage *storage,
 bool handle_sav(int sd, Storage *storage,
                 const std::string &u, const std::string &p,
                 const vector<uint8_t> &req) {
-  cout << "responses.cc::handle_sav() is not implemented\n";
+  // cout << "responses.cc::handle_sav() is not implemented\n";
   // NB: These asserts are to prevent compiler warnings
-  assert(sd);
-  assert(storage);
-  assert(u.length() > 0);
-  assert(p.length() > 0);
-  assert(req.size() > 0);
+  // assert(sd);
+  // assert(storage);
+  // assert(u.length() > 0);
+  // assert(p.length() > 0);
+  // assert(req.size() > 0);
+  
+  // SAVE protocol: "SAVE".len(user).len(pass).@0.user.pass
+  // The req parameter should be empty
+  // First authenticate the user
+  auto auth_result = storage->auth(u, p);
+  
+  if (!auth_result.succeeded) {
+    send_reliably(sd, auth_result.msg);
+    return false;
+  }
+  
+  // User authenticated, now save the file
+  auto result = storage->save_file();
+  
+  if (result.succeeded) {
+    send_reliably(sd, RES_OK);
+  } else {
+    send_reliably(sd, result.msg);
+  }
+  
   return false;
 }
