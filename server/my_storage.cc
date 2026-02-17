@@ -249,17 +249,12 @@ public:
 
     // Build Newline-delimited list of usernames
     string usernames = "";
-    bool first = true;
 
     // Call read-only because we don't want to be able to change
     // Other users' information, as a singular user shouldn't have 
     // Elevated privelages
     auth_table->do_all_readonly([&](const string &username, const AuthTableEntry &entry) {
-      if (!first) {
-        usernames += "\n";
-      }
-      usernames += username;
-      first = false;
+        usernames += username + "\n"; // Standard: every entry gets a newline
     });
 
     // Convert string to vector<uint8_t>
