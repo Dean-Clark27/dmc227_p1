@@ -12,3 +12,14 @@ obj64/
 
 # Executable files
 *.exe
+
+# Shell / user files
+.bash_history
+.gnupg/
+.ssh/
+.config/
+.cache/
+
+# OS noise
+.DS_Store
+Thumbs.db
