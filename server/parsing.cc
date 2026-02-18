@@ -38,9 +38,9 @@ uint32_t extract_size(vector<uint8_t>::iterator &it) {
   // return 0;
   uint32_t size;
 
-  std::memcpy(&size, &(*it), sizeof(uint32_t));
+  std::memcopy(&size, &(*it), sizeof(uint32_t));
 
-  std::advance(it, sizeof(uint32_t));
+  std::advance(it, size(uint_t));
   return size; 
 }
 
@@ -53,79 +53,16 @@ uint32_t extract_size(vector<uint8_t>::iterator &it) {
 ///
 /// @return true if the server should halt immediately, false otherwise
 bool parse_request(int sd, Storage *storage) {
-  // Protocol format: CMD (4 bytes) | len1 (4) | len2 (4) | len3 (4) | data1 | data2 | data3
-  // Where: CMD = command, len1 = username length, len2 = password length, len3 = additional msg length
-  //        data1 = username, data2 = password, data3 = additional message data
-
-  // 1. Read the command (4 bytes)
-  vector<uint8_t> cmd_buf(4);
-  if (!reliable_get_to_eof_or_n(sd, cmd_buf.begin(), 4)) {
-    return false;
-  }
-  // Convert buffer to string for easy comparison
-  string cmd(cmd_buf.begin(), cmd_buf.end());
-
-  // 2. Read three length fields (12 bytes total: 3 x 4 bytes)
-  vector<uint8_t> lengths_buf(12);
-  if (!reliable_get_to_eof_or_n(sd, lengths_buf.begin(), 12)) {
-    return false;
-  }
+  // cout << "parsing.cc::parse_request() is not implemented\n";
+  // NB: These assertions are only here to prevent compiler warnings
+  // assert(sd);
+  // assert(storage);
   
-  auto len_it = lengths_buf.begin();
-  uint32_t user_len = extract_size(len_it);
-  uint32_t pass_len = extract_size(len_it);
-  uint32_t msg_len  = extract_size(len_it);
-
-  // 3. Validate lengths (Sanity check to prevent OOM attacks)
-  if (user_len > LEN_UNAME || pass_len > LEN_PASSWORD) {
-    send_err_msg_format(sd);
-    return false;
-  }
-
-  // 4. Read username
-  string user = "";
-  if (user_len > 0) {
-    vector<uint8_t> user_buf(user_len);
-    if (!reliable_get_to_eof_or_n(sd, user_buf.begin(), user_len)) return false;
-    user.assign(user_buf.begin(), user_buf.end());
-  }
-
-  // 5. Read password
-  string pass = "";
-  if (pass_len > 0) {
-    vector<uint8_t> pass_buf(pass_len);
-    if (!reliable_get_to_eof_or_n(sd, pass_buf.begin(), pass_len)) return false;
-    pass.assign(pass_buf.begin(), pass_buf.end());
-  }
-
-  // 6. Read additional message data
-  vector<uint8_t> msg;
-  if (msg_len > 0) {
-    msg.resize(msg_len);
-    if (!reliable_get_to_eof_or_n(sd, msg.begin(), msg_len)) {
-      return false;
-    }
-  }
-
-// 7. Dispatch
-  vector<string> command_names = {REQ_REG, REQ_BYE, REQ_SAV, REQ_SET, REQ_GET, REQ_ALL};
-  
-  // Use decltype to automatically get the correct function pointer signature
-  // handle_reg is used as the template for the type
-  using handler_t = decltype(&handle_reg);
-
-  handler_t handlers[] = {
-      handle_reg, handle_bye, handle_sav, handle_set, handle_get, handle_all
-  };
-
-  for (size_t i = 0; i < command_names.size(); ++i) {
-    if (cmd == command_names[i]) {
-      // The 'msg' vector we populated in step 6 is passed here
-      return handlers[i](sd, storage, user, pass, msg); 
-    }
-  }
-
-  // Unknown command
-  send_err_msg_format(sd);
-  return false;
+  // Iterate through possible commands, pick the right one, run it
+  vector<string> s = {REQ_REG, REQ_BYE, REQ_SAV, REQ_SET, REQ_GET, REQ_ALL};
+  decltype(handle_reg) *cmds[] = {handle_reg, handle_bye, handle_sav,
+                                  handle_set, handle_get, handle_all};
+  for (size_t i = 0; i < s.size(); ++i)
+    if (cmd == s[i])
+      return cmds[i](sd, storage, aes_ctx, ablock);
 }

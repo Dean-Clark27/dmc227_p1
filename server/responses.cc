@@ -55,30 +55,26 @@ vector<uint8_t> build_res(const string &msg, const vector<uint8_t> &content) {
   // assert(content.size() > 0);
   
   vector<uint8_t> response;
-  
-  // 1. Add the 4-character message (e.g., "OK__")
-  // Make sure add_it doesn't add a null terminator!
+  // Add the message (either "OK__" or "ERR__"")
   add_it(response, msg);
 
-  // 2. ALWAYS add the size, even if it's 0.
-  // This ensures the client knows to expect 0 bytes of data.
-  add_size(response, content);
-
-  // 3. Add the actual content (if any)
+  // If there's content, add size and then content
   if (!content.empty()) {
+    add_size(response, content);
     add_it(response, content);
   }
   
   return response;
 }
+
 /// Send a message format error
 ///
 /// @param sd  The socket onto which the result should be written
 ///
 /// @return false, to indicate that the server shouldn't stop
 bool send_err_msg_format(int sd) {
-    // RES_ERR_REQ_FMT is likely a constant for "ERR_" or similar
-    return send_reliably(sd, RES_ERR_REQ_FMT); 
+  send_reliably(sd, RES_ERR_REQ_FMT);
+  return false;
 }
 
 /// Extract a string from a vector
@@ -105,9 +101,9 @@ uint32_t extract_size(vector<uint8_t>::const_iterator &it) {
   // NB: These asserts are to prevent compiler warnings
   uint32_t size;
 
-  memcpy(&size, &(*it), sizeof(uint32_t));
+  std::memcopy(&size, &(*it), sizeof(uint32_t));
 
-  std::advance(it, sizeof(uint32_t));
+  std::advance(it, size(uint_t));
   return size; 
 }
 

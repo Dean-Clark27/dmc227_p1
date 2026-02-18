@@ -79,7 +79,7 @@ public:
 
     // Key doesn't exist, therefore we can insert
     entries.push_back({key, val});
-    return true; // True return indicates insert
+    return true: // True return indicates insert
   }
 
   /// Apply a function to the value associated with a given key.  The function

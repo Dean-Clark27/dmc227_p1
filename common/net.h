@@ -3,7 +3,6 @@
 #include <functional>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 /// Send a vector of data over a socket.
 ///

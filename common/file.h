@@ -2,7 +2,6 @@
 
 #include <string>
 #include <vector>
-#include <cstdint>
 
 /// Determine if a file exists.  Note that using this is not a good way to avoid
 /// TOCTOU bugs, but it is acceptable for this class project.

@@ -3,7 +3,6 @@
 #include <string>
 #include <unistd.h>
 #include <vector>
-#include <cstdint>
 
 #include "../common/constants.h"
 #include "../common/contextmanager.h"
