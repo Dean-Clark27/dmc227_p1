@@ -2,6 +2,8 @@
 
 #include <string>
 
+using namespace std;
+
 // NB: The remaining function declarations have the same signature, so that we
 //     can store pointers to them in an array
 

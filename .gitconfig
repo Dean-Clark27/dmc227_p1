@@ -8,4 +8,4 @@
 [rebase]
 	autoStash = true
 [credential]
-	helper = "!f() { /root/.vscode-server/bin/b6a47e94e326b5c209d118cf0f994d6065585705/node /tmp/vscode-remote-containers-2827d7b2-2a5c-4125-b780-29569bd74d5c.js git-credential-helper $*; }; f"
+	helper = "!f() { /root/.vscode-server/bin/072586267e68ece9a47aa43f8c108e0dcbf44622/node /tmp/vscode-remote-containers-ad7b914c-83b7-4831-918e-1748c00d5c13.js git-credential-helper $*; }; f"

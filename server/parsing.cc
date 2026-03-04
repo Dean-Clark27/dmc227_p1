@@ -23,9 +23,9 @@ string extract_string(vector<uint8_t>::iterator &it, size_t count) {
   // cout << "parsing.cc::extract_string() is not implemented\n";
   // NB: These assertions are only here to prevent compiler warnings
   // assert(count != 0);
-  std::string result(it, it + count); 
+  string result(it, it + count); 
 
-  std::advance(it,count);
+  advance(it,count);
   return result;
 }
 
@@ -38,9 +38,8 @@ uint32_t extract_size(vector<uint8_t>::iterator &it) {
   // return 0;
   uint32_t size;
 
-  std::memcopy(&size, &(*it), sizeof(uint32_t));
-
-  std::advance(it, size(uint_t));
+  memcpy(&size, &(*it), sizeof(uint32_t));
+  advance(it, sizeof(uint32_t));
   return size; 
 }
 
@@ -58,11 +57,41 @@ bool parse_request(int sd, Storage *storage) {
   // assert(sd);
   // assert(storage);
   
-  // Iterate through possible commands, pick the right one, run it
-  vector<string> s = {REQ_REG, REQ_BYE, REQ_SAV, REQ_SET, REQ_GET, REQ_ALL};
-  decltype(handle_reg) *cmds[] = {handle_reg, handle_bye, handle_sav,
-                                  handle_set, handle_get, handle_all};
-  for (size_t i = 0; i < s.size(); ++i)
-    if (cmd == s[i])
-      return cmds[i](sd, storage, aes_ctx, ablock);
+  vector<uint8_t> header(16);
+
+  if (!reliable_get_to_eof_or_n(sd, header.begin(), 16)) {
+    return false; 
+  }
+
+  auto it = header.begin();
+  string cmd = extract_string(it, 4);
+  uint32_t ulen = extract_size(it);
+  uint32_t plen = extract_size(it);
+  uint32_t mlen = extract_size(it);
+
+  // 2. Security Check: Validate lengths against constants.h limits
+  if (ulen > LEN_UNAME || plen > LEN_PASSWORD || mlen > LEN_PROFILE_FILE) {
+    return false; // Or send RES_ERR_REQ_FMT
+  }
+
+  // 3. Read the variable data (Username, Password, and Message/Profile)
+  vector<uint8_t> body(ulen + plen + mlen);
+  if (!reliable_get_to_eof_or_n(sd, body.begin(), body.size())) {
+    return false;
+  }
+
+  auto body_it = body.begin();
+  string user = extract_string(body_it, ulen);
+  string pass = extract_string(body_it, plen);
+  vector<uint8_t> msg(body_it, body_it + mlen);
+
+  // 4. Dispatch to the appropriate handler
+  if (cmd == REQ_REG) return handle_reg(sd, storage, user, pass, msg);
+  if (cmd == REQ_BYE) return handle_bye(sd, storage, user, pass, msg);
+  if (cmd == REQ_SAV) return handle_sav(sd, storage, user, pass, msg);
+  if (cmd == REQ_SET) return handle_set(sd, storage, user, pass, msg);
+  if (cmd == REQ_GET) return handle_get(sd, storage, user, pass, msg);
+  if (cmd == REQ_ALL) return handle_all(sd, storage, user, pass, msg);
+
+  return false;
 }

@@ -13,6 +13,6 @@ using namespace std;
 ///     map.
 ///
 /// @param  buckets The number of buckets in the table
-Map<string, AuthTableEntry> *authtable_factory(size_t buckets) {
+Map<std::string, AuthTableEntry> *authtable_factory(size_t buckets) {
   return new SequentialMap<string, AuthTableEntry>(buckets);
 }

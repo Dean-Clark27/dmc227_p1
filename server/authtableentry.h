@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 /// AuthTableEntry represents one user stored in the authentication table
 struct AuthTableEntry {

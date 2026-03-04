@@ -3,6 +3,9 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include <cstdint>
+
+using namespace std;
 
 /// Send a vector of data over a socket.
 ///
@@ -10,15 +13,16 @@
 /// @param msg The message to send
 ///
 /// @return True if the whole vector was sent, false otherwise
-bool send_reliably(int sd, const std::vector<uint8_t> &msg);
+bool send_reliably(int sd, const vector<uint8_t> &msg);
 
-/// Send a string over a socket.
+/// Internal method to send a buffer of data over a socket.
 ///
-/// @param sd  The socket on which to send
-/// @param msg The message to send
+/// @param sd    The socket on which to send
+/// @param bytes A pointer to the first byte of the data to send
+/// @param len   The number of bytes to send
 ///
-/// @return True if the whole string was sent, false otherwise
-bool send_reliably(int sd, const std::string &msg);
+/// @return True if the whole buffer was sent, false otherwise
+bool reliable_send(int sd, const unsigned char *bytes, int len);
 
 /// Perform a reliable read when we have a guess about how many bytes we might
 /// get, but it's OK if the socket EOFs before we get that many bytes.

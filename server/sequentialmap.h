@@ -1,8 +1,10 @@
+#pragma once
 #include <functional>
 #include <mutex>
 #include <string>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 
 #include "map.h"
 
@@ -79,7 +81,7 @@ public:
 
     // Key doesn't exist, therefore we can insert
     entries.push_back({key, val});
-    return true: // True return indicates insert
+    return true; // True return indicates insert
   }
 
   /// Apply a function to the value associated with a given key.  The function
@@ -151,24 +153,18 @@ public:
     if (it != entries.end()){
       // Key found, remove it
       entries.erase(it);
+      return true;
     }
 
     // Key not found
     return false; 
   }
 
-  /// Apply a function to every key/value pair in the map.  Note that the
-  /// function is not allowed to modify keys or values.
-  ///
-  /// @param f    The function to apply to each key/value pair
-  /// @param then A function to run when this is done, but before unlocking...
-  ///             useful for 2pl
-  virtual void do_all_readonly(std::function<void(const K, const V &)> f) {
-    // std::cout << "sequentialmap.h::do_all_readonly() is not implemented\n";
-    //(void)f;
-  
-    // Apply function to each entry
+ /// Apply a function to every key/value pair in the map.
+  /// @param f The function to apply to each key/value pair
+  virtual void do_all_readonly(std::function<void(const K, const V &)> f) override {
     for (const auto &entry : entries) {
+      // entry.first is K, entry.second is V
       f(entry.first, entry.second);
     }
   }
